@@ -309,6 +309,10 @@ function buildForkedTopology(
   if (coreTip.height > knotsTip.height) leader = 'core';
   else if (knotsTip.height > coreTip.height) leader = 'knots';
 
+  const ancHeight = commonAncestor.height;
+  const coreLen = Math.max(coreBranch.length, coreTip.height - ancHeight);
+  const knotsLen = Math.max(knotsBranch.length, knotsTip.height - ancHeight);
+
   return {
     status: 'forked',
     shared,
@@ -321,8 +325,8 @@ function buildForkedTopology(
     leader,
     reorgChancePercent:
       deltaBlocks > 0 ? approxReorgChancePercent(deltaBlocks) : 50,
-    coreLabel: `STANDARD +${coreBranch.length}`,
-    knotsLabel: `BIP-110 +${knotsBranch.length}`,
+    coreLabel: `STANDARD +${coreLen}`,
+    knotsLabel: `BIP-110 +${knotsLen}`,
     updatedAt: now,
   };
 }

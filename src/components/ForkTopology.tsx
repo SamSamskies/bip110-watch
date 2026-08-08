@@ -37,8 +37,14 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
     setExpandKnots(false);
   }, [topology.coreTip?.hash, topology.knotsTip?.hash]);
 
-  const coreView = viewBranch(coreBranch, expandCore);
-  const knotsView = viewBranch(knotsBranch, expandKnots);
+  const ancestorHeight = shared[shared.length - 1]?.height ?? null;
+  const coreView = viewBranch(coreBranch, expandCore, undefined, ancestorHeight);
+  const knotsView = viewBranch(
+    knotsBranch,
+    expandKnots,
+    undefined,
+    ancestorHeight,
+  );
 
   const sharedCount = shared.length;
   const sharedWidth =
@@ -174,6 +180,10 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   );
 }
 
+function itemWidth(kind: 'chip' | 'block'): number {
+  return kind === 'chip' ? OMIT_W : BLOCK_W;
+}
+
 function LaneBranch({
   side,
   view,
@@ -200,82 +210,73 @@ function LaneBranch({
   labelClass: string;
 }) {
   const linkClass = side === 'core' ? 'link link--core' : 'link link--knots';
-  const hasOmit = view.canToggle;
-  const blocksStartX = hasOmit
-    ? branchStartX + OMIT_W + GAP
-    : branchStartX;
-  const first = view.blocks[0];
-  if (!first) return null;
+  if (view.items.length === 0) return null;
 
-  const omitCx = branchStartX + OMIT_W / 2;
   const laneMidY = y + BLOCK_H / 2;
-  const labelX =
-    blocksStartX +
-    view.blocks.length * (BLOCK_W + GAP) -
-    GAP +
-    8;
+  let x = branchStartX;
+  const placed = view.items.map((item) => {
+    const at = x;
+    x += itemWidth(item.kind) + GAP;
+    return { item, x: at };
+  });
+  const labelX = x - GAP + 8;
+  const first = placed[0]!;
+  const firstDashed = first.item.kind === 'chip';
 
   return (
     <g className={`lane-branch lane-branch--${side}`}>
-      {/* Ancestor → omit chip or first block */}
       <path
-        className={`${linkClass}${hasOmit ? ' link--dashed' : ''}`}
+        className={`${linkClass}${firstDashed ? ' link--dashed' : ''}`}
         fill="none"
         d={forkPath(
           ancestorCx,
           ancestorBottom,
-          hasOmit ? omitCx : blocksStartX,
+          first.x + itemWidth(first.item.kind) / 2,
           laneMidY,
         )}
       />
 
-      {hasOmit ? (
-        <>
-          <OmitToggle
-            x={branchStartX}
-            y={y}
-            side={side}
-            omitted={view.omitted}
-            collapsed={view.collapsed}
-            onToggle={onToggle}
-          />
-          <line
-            x1={branchStartX + OMIT_W}
-            y1={laneMidY}
-            x2={blocksStartX}
-            y2={laneMidY}
-            className={`${linkClass} link--dashed`}
-          />
-        </>
-      ) : null}
-
-      {/* Branch internal links */}
-      {view.blocks.map((b, i) => {
+      {placed.map((cur, i) => {
         if (i === 0) return null;
-        const x1 = blocksStartX + (i - 1) * (BLOCK_W + GAP) + BLOCK_W;
-        const x2 = blocksStartX + i * (BLOCK_W + GAP);
+        const prev = placed[i - 1]!;
+        const dashed =
+          prev.item.kind === 'chip' || cur.item.kind === 'chip';
         return (
           <line
-            key={`l-${side}-${b.hash}`}
-            x1={x1}
+            key={`l-${side}-${i}`}
+            x1={prev.x + itemWidth(prev.item.kind)}
             y1={laneMidY}
-            x2={x2}
+            x2={cur.x}
             y2={laneMidY}
-            className={linkClass}
+            className={`${linkClass}${dashed ? ' link--dashed' : ''}`}
           />
         );
       })}
 
-      {view.blocks.map((b, i) => (
-        <BlockNode
-          key={b.hash}
-          block={b}
-          x={blocksStartX + i * (BLOCK_W + GAP)}
-          y={y}
-          selected={selectedHash === b.hash}
-          onSelect={onSelect}
-        />
-      ))}
+      {placed.map(({ item, x: ix }, i) =>
+        item.kind === 'chip' ? (
+          <OmitChip
+            key={`c-${side}-${i}`}
+            x={ix}
+            y={y}
+            side={side}
+            omitted={item.omitted}
+            collapsed={item.collapsed}
+            interactive={item.canToggle}
+            isDataGap={item.isDataGap}
+            onToggle={onToggle}
+          />
+        ) : (
+          <BlockNode
+            key={item.block.hash}
+            block={item.block}
+            x={ix}
+            y={y}
+            selected={selectedHash === item.block.hash}
+            onSelect={onSelect}
+          />
+        ),
+      )}
 
       <text x={labelX} y={laneMidY + 5} className={labelClass}>
         {label}
@@ -285,18 +286,23 @@ function LaneBranch({
 }
 
 function laneWidth(view: ReturnType<typeof viewBranch>): number {
-  const n = view.blocks.length;
-  if (n === 0) return 0;
-  const blocksW = n * BLOCK_W + (n - 1) * GAP;
-  return view.canToggle ? OMIT_W + GAP + blocksW : blocksW;
+  if (view.items.length === 0) return 0;
+  let w = 0;
+  for (let i = 0; i < view.items.length; i++) {
+    w += itemWidth(view.items[i]!.kind);
+    if (i < view.items.length - 1) w += GAP;
+  }
+  return w;
 }
 
-function OmitToggle({
+function OmitChip({
   x,
   y,
   side,
   omitted,
   collapsed,
+  interactive,
+  isDataGap,
   onToggle,
 }: {
   x: number;
@@ -304,32 +310,45 @@ function OmitToggle({
   side: 'core' | 'knots';
   omitted: number;
   collapsed: boolean;
+  interactive: boolean;
+  isDataGap: boolean;
   onToggle: () => void;
 }) {
   const color = side === 'core' ? 'var(--core)' : 'var(--knots)';
-  const label = collapsed ? `…+${omitted}` : '−';
-  const title = collapsed
-    ? `Show ${omitted} older block${omitted === 1 ? '' : 's'}`
-    : 'Show fewer blocks';
+  const label =
+    interactive && !collapsed && !isDataGap ? '−' : `…+${omitted}`;
+  const title = isDataGap
+    ? `${omitted} block${omitted === 1 ? '' : 's'} missing from header data`
+    : collapsed
+      ? `Show ${omitted} older block${omitted === 1 ? '' : 's'}`
+      : 'Show fewer blocks';
 
   return (
     <g
-      className="omit-toggle"
+      className={interactive ? 'omit-toggle' : 'omit-gap'}
       transform={`translate(${x}, ${y})`}
-      role="button"
-      tabIndex={0}
+      role={interactive ? 'button' : 'img'}
+      tabIndex={interactive ? 0 : undefined}
       aria-label={title}
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          e.stopPropagation();
-          onToggle();
-        }
-      }}
+      onClick={
+        interactive
+          ? (e) => {
+              e.stopPropagation();
+              onToggle();
+            }
+          : undefined
+      }
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggle();
+              }
+            }
+          : undefined
+      }
     >
       <rect
         width={OMIT_W}

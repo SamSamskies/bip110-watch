@@ -197,7 +197,12 @@ body {
   cursor: pointer;
 }
 
-.omit-toggle rect {
+.omit-gap {
+  cursor: help;
+}
+
+.omit-toggle rect,
+.omit-gap rect {
   transition: fill 120ms ease, stroke-width 120ms ease;
 }
 
