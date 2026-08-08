@@ -7,8 +7,6 @@
   --shared: #3dd68c;
   --core: #f7931a;
   --knots: #3ecfcf;
-  --bip110: #5dff9f;
-  --nosignal: #6b7385;
   --block-fill: #161b24;
   --danger: #ff6b6b;
   --border: rgba(255, 255, 255, 0.06);
@@ -206,15 +204,6 @@ body {
   pointer-events: none;
 }
 
-.signal-dot {
-  fill: var(--nosignal);
-}
-
-.signal-dot--on {
-  fill: var(--bip110);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--bip110) 70%, transparent));
-}
-
 .block-node {
   cursor: pointer;
 }
@@ -250,64 +239,6 @@ body {
 
 .lane-label--knots {
   fill: var(--knots);
-}
-
-.topology-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-.legend {
-  display: flex;
-  gap: 0.9rem;
-}
-
-.legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  letter-spacing: 0.04em;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.dot--bip110 {
-  background: var(--bip110);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--bip110) 60%, transparent);
-}
-
-.dot--nosignal {
-  background: var(--nosignal);
-}
-
-.ancestor-meta {
-  text-align: right;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-}
-
-.meta-label {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.65rem;
-}
-
-.meta-value {
-  color: var(--text);
-  font-weight: 600;
 }
 
 .main-row {
@@ -429,11 +360,6 @@ body {
 
   .delta-badge {
     justify-self: start;
-  }
-
-  .topology-footer {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .main-row.has-details {

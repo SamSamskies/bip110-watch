@@ -13,8 +13,8 @@ description: >-
 Window into **standard vs BIP-110** tips during BIP-110 — not a full explorer or
 signaling education site (see bip110.orange.surf for that).
 
-Hero UI: horizontal shared chain → branch at common ancestor → STANDARD / BIP-110
-lanes with BIP-110 signal dots.
+Hero UI: common ancestor only → branch → STANDARD / BIP-110 lanes.
+Per-block signaling lives in block details, not on the diagram.
 
 ## Proxies
 
@@ -46,8 +46,8 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 `buildTopology(orange, fork)` in `src/lib/topology.ts`:
 
 1. Tips from orange (preferred) or fork.observer standard / BIP-110 nodes
-2. Walk `header_infos` via `prev_blockhash` to find common ancestor
-3. Shared path + two branches; projected dashed “next” slots are cosmetic
+2. Walk `header_infos` via `prev_id` (fallback `prev_blockhash`) to find common ancestor — hash-only walks break on sparse fork.observer DAGs
+3. Shared path is ancestor-only; branches capped by `MAX_BRANCH_DISPLAY`
 4. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
 
 Fixtures: `?mock=forked` / `?mock=agree` via `src/data/fixtures.ts`.

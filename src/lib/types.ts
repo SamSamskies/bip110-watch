@@ -12,8 +12,9 @@ export const ESPLORA_HOSTS = [
   'https://blockstream.info',
 ] as const;
 
-export const SHARED_HISTORY_LEN = 7;
-export const MAX_BRANCH_DISPLAY = 6;
+/** Shared path length: ancestor only when forked; tip only when tips agree. */
+export const SHARED_HISTORY_LEN = 1;
+export const MAX_BRANCH_DISPLAY = 10;
 
 export type ChainSide = 'core' | 'knots' | 'shared';
 

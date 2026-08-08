@@ -232,29 +232,6 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
           )}
         </svg>
       </div>
-
-      <footer className="topology-footer">
-        <div className="legend">
-          <span className="legend-item">
-            <i className="dot dot--bip110" /> BIP110
-          </span>
-          <span className="legend-item">
-            <i className="dot dot--nosignal" /> NO SIGNAL
-          </span>
-        </div>
-        <div className="ancestor-meta">
-          {topology.commonAncestor ? (
-            <>
-              <span className="meta-label">Common ancestor</span>{' '}
-              <span className="meta-value">
-                {formatHeight(topology.commonAncestor.height)}
-              </span>
-            </>
-          ) : (
-            <span className="meta-label">No ancestor yet</span>
-          )}
-        </div>
-      </footer>
     </section>
   );
 }
@@ -325,12 +302,6 @@ function BlockNode({
       >
         {formatHeight(block.height)}
       </text>
-      <circle
-        cx={BLOCK_W - 10}
-        cy={10}
-        r={4.5}
-        className={block.signals ? 'signal-dot signal-dot--on' : 'signal-dot'}
-      />
       <text
         x={BLOCK_W / 2}
         y={BLOCK_H + LABEL_GAP + 10}
@@ -342,7 +313,6 @@ function BlockNode({
       <title>
         {formatHeight(block.height)}
         {block.miner ? ` · ${block.miner}` : ''}
-        {block.signals ? ' · BIP-110' : ' · no signal'}
       </title>
     </g>
   );

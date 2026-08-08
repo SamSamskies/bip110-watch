@@ -6,6 +6,7 @@ import {
   activeTip,
   findKnotsAndCoreNodes,
   indexHeadersByHash,
+  indexHeadersById,
   walkBack,
   type ForkDataResponse,
   type ForkHeaderInfo,
@@ -134,12 +135,15 @@ export function buildTopology(
   const byHash = fork
     ? indexHeadersByHash(fork.header_infos)
     : new Map<string, ForkHeaderInfo>();
+  const byId = fork
+    ? indexHeadersById(fork.header_infos)
+    : new Map<number, ForkHeaderInfo>();
 
   if (agree) {
-    return buildAgreeTopology(coreTip!, byHash, now);
+    return buildAgreeTopology(coreTip!, byHash, byId, now);
   }
 
-  return buildForkedTopology(coreTip!, knotsTip!, byHash, now);
+  return buildForkedTopology(coreTip!, knotsTip!, byHash, byId, now);
 }
 
 function emptyTopology(now: number): ForkTopology {
@@ -163,9 +167,10 @@ function emptyTopology(now: number): ForkTopology {
 function buildAgreeTopology(
   tip: { hash: string; height: number },
   byHash: Map<string, ForkHeaderInfo>,
+  byId: Map<number, ForkHeaderInfo>,
   now: number,
 ): ForkTopology {
-  const path = walkBack(byHash, tip.hash, SHARED_HISTORY_LEN + 2);
+  const path = walkBack(byHash, tip.hash, SHARED_HISTORY_LEN + 2, byId);
   let shared: TopologyBlock[];
 
   if (path.length > 0) {
@@ -216,10 +221,11 @@ function buildForkedTopology(
   coreTip: { hash: string; height: number },
   knotsTip: { hash: string; height: number },
   byHash: Map<string, ForkHeaderInfo>,
+  byId: Map<number, ForkHeaderInfo>,
   now: number,
 ): ForkTopology {
-  const corePath = walkBack(byHash, coreTip.hash, 128);
-  const knotsPath = walkBack(byHash, knotsTip.hash, 128);
+  const corePath = walkBack(byHash, coreTip.hash, 128, byId);
+  const knotsPath = walkBack(byHash, knotsTip.hash, 128, byId);
 
   let ancestorHash = findCommonAncestorHash(corePath, knotsPath);
   let sharedHeaders: ForkHeaderInfo[] = [];
