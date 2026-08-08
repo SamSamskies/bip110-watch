@@ -26,7 +26,7 @@ function App() {
         <div>
           <h1>BIP-110 Watch</h1>
           <p>
-            Live Core vs Knots fork topology during BIP-110 mandatory signaling.
+            Live BIP-110 fork topology during mandatory signaling.
           </p>
         </div>
       </header>

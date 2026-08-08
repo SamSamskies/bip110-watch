@@ -1,8 +1,8 @@
 # BIP-110 Watch
 
-Live **fork topology** visualizer for BIP-110 (Core vs Knots tips).
+Live **fork topology** visualizer for BIP-110 (standard vs BIP-110 tips).
 
-Not another signaling dashboard — [orange.surf](https://bip110.orange.surf/live.html) already does that. This app focuses on a branching chain diagram: shared history → common ancestor → Core / Knots lanes.
+Not another signaling dashboard — [orange.surf](https://bip110.orange.surf/live.html) already does that. This app focuses on a branching chain diagram: shared history → common ancestor → standard / BIP-110 lanes.
 
 ## Develop
 

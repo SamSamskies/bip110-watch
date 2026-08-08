@@ -45,7 +45,13 @@ export function BlockDetails({ block, onClose }: Props) {
         </div>
         <div>
           <dt>Side</dt>
-          <dd className={`side side--${block.side}`}>{block.side}</dd>
+          <dd className={`side side--${block.side}`}>
+            {block.side === 'core'
+              ? 'standard'
+              : block.side === 'knots'
+                ? 'bip-110'
+                : 'shared'}
+          </dd>
         </div>
         <div>
           <dt>BIP-110</dt>

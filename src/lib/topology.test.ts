@@ -48,7 +48,7 @@ describe('topology buildTopology', () => {
     void fork;
   });
 
-  it('builds forked Core-ahead topology like the reference', () => {
+  it('builds forked standard-ahead topology like the reference', () => {
     const { topology } = fixtureForkedCoreAhead();
     expect(topology.status).toBe('forked');
     expect(topology.leader).toBe('core');
@@ -57,12 +57,12 @@ describe('topology buildTopology', () => {
 
     expect(topology.coreBranch).toHaveLength(2);
     expect(topology.knotsBranch).toHaveLength(1);
-    expect(topology.coreLabel).toBe('CORE +2');
-    expect(topology.knotsLabel).toBe('KNOTS +1');
+    expect(topology.coreLabel).toBe('STANDARD +2');
+    expect(topology.knotsLabel).toBe('BIP-110 +1');
 
-    // Knots tip signals BIP-110
+    // BIP-110 tip signals
     expect(topology.knotsBranch[0]?.signals).toBe(true);
-    // Core branch does not
+    // Standard branch does not
     expect(topology.coreBranch.every((b) => !b.signals)).toBe(true);
 
     expect(topology.reorgChancePercent).toBeCloseTo(25, 5);

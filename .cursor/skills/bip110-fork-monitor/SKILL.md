@@ -10,10 +10,10 @@ description: >-
 
 ## Product
 
-Window into **Core vs Knots** tips during BIP-110 — not a full explorer or
+Window into **standard vs BIP-110** tips during BIP-110 — not a full explorer or
 signaling education site (see bip110.orange.surf for that).
 
-Hero UI: horizontal shared chain → branch at common ancestor → CORE / KNOTS
+Hero UI: horizontal shared chain → branch at common ancestor → STANDARD / BIP-110
 lanes with BIP-110 signal dots.
 
 ## Proxies
@@ -45,7 +45,7 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 
 `buildTopology(orange, fork)` in `src/lib/topology.ts`:
 
-1. Tips from orange (preferred) or fork.observer Core / Knots BIP-110 nodes
+1. Tips from orange (preferred) or fork.observer standard / BIP-110 nodes
 2. Walk `header_infos` via `prev_blockhash` to find common ancestor
 3. Shared path + two branches; projected dashed “next” slots are cosmetic
 4. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate

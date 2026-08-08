@@ -99,7 +99,7 @@ export function fixtureInAgreement(): {
 
 /**
  * Forked fixture matching the reference mock:
- * common ancestor 961631, Core +2 (632–633), Knots +1 (632).
+ * common ancestor 961631, standard +2 (632–633), BIP-110 +1 (632).
  */
 export function fixtureForkedCoreAhead(): {
   orange: OrangeNodesResponse;

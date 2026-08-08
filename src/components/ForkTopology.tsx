@@ -74,9 +74,9 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
           <div className="delta-badge" title="Height difference between tips">
             <span aria-hidden>▲</span>{' '}
             {topology.leader === 'core'
-              ? 'Core'
+              ? 'Standard'
               : topology.leader === 'knots'
-                ? 'Knots'
+                ? 'BIP-110'
                 : null}{' '}
             {topology.deltaBlocks} BLOCK
             {topology.deltaBlocks === 1 ? '' : 'S'}
@@ -185,7 +185,7 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
             />
           ))}
 
-          {/* Core / Knots branches */}
+          {/* Standard / BIP-110 branches */}
           {forked &&
             coreBranch.map((b, i) => (
               <BlockNode

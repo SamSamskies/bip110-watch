@@ -154,8 +154,8 @@ function emptyTopology(now: number): ForkTopology {
     deltaBlocks: 0,
     leader: null,
     reorgChancePercent: null,
-    coreLabel: 'CORE',
-    knotsLabel: 'KNOTS',
+    coreLabel: 'STANDARD',
+    knotsLabel: 'BIP-110',
     updatedAt: now,
   };
 }
@@ -206,8 +206,8 @@ function buildAgreeTopology(
     deltaBlocks: 0,
     leader: null,
     reorgChancePercent: null,
-    coreLabel: 'CORE',
-    knotsLabel: 'KNOTS',
+    coreLabel: 'STANDARD',
+    knotsLabel: 'BIP-110',
     updatedAt: now,
   };
 }
@@ -323,8 +323,8 @@ function buildForkedTopology(
     leader,
     reorgChancePercent:
       deltaBlocks > 0 ? approxReorgChancePercent(deltaBlocks) : 50,
-    coreLabel: `CORE +${coreBranch.length}`,
-    knotsLabel: `KNOTS +${knotsBranch.length}`,
+    coreLabel: `STANDARD +${coreBranch.length}`,
+    knotsLabel: `BIP-110 +${knotsBranch.length}`,
     updatedAt: now,
   };
 }
