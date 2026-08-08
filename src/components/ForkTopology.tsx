@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatHeight } from '../lib/bip110';
 import { viewBranch } from '../lib/branchView';
 import type { ForkTopology, TopologyBlock } from '../lib/types';
@@ -28,6 +28,7 @@ function blockColor(side: TopologyBlock['side']): string {
 export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   const { shared, coreBranch, knotsBranch, status } = topology;
   const forked = status === 'forked';
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const [expandCore, setExpandCore] = useState(false);
   const [expandKnots, setExpandKnots] = useState(false);
@@ -60,6 +61,22 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   const height = forked
     ? PAD_Y * 2 + LANE_GAP + BLOCK_H * 2 + LABEL_H
     : PAD_Y * 2 + BLOCK_H + LABEL_H + 24;
+
+  // Tip-align when tips move. Do not steal scroll on expand — new blocks
+  // appear to the left of the tip window and should stay in view.
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth - el.clientWidth;
+  }, [topology.coreTip?.hash, topology.knotsTip?.hash]);
+
+  // Re-anchor to the tip after collapse (compact tip-window again).
+  useEffect(() => {
+    if (expandCore || expandKnots) return;
+    const el = canvasRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth - el.clientWidth;
+  }, [expandCore, expandKnots, width]);
 
   const midY = height / 2;
   const coreY = midY - LANE_GAP / 2 - BLOCK_H / 2;
@@ -107,10 +124,11 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
         )}
       </header>
 
-      <div className="topology-canvas">
+      <div className="topology-canvas" ref={canvasRef}>
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          width="100%"
+          width={width}
+          height={height}
           role="img"
           aria-label={statusText ?? 'Fork topology diagram'}
         >

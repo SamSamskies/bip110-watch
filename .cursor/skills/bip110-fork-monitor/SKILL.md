@@ -58,7 +58,8 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 4. Shared path is ancestor-only; topology keeps full post-fork branches
 5. UI tip-windows with `MAX_BRANCH_DISPLAY`; truncated lanes show dashed `…+N`
    (click to expand/collapse). Remaining height holes get a non-clickable `…+N`
-   chip *between* the bordering blocks
+   chip *between* the bordering blocks. Diagram uses fixed block pixels +
+   horizontal scroll (tip-aligned); do not scale the SVG to fit width.
 6. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
 
 Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.ts`.

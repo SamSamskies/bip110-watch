@@ -162,13 +162,15 @@ body {
 .topology-canvas {
   width: 100%;
   overflow-x: auto;
-  padding: 0.5rem 0 0.25rem;
+  padding: 0.5rem 0 0.35rem;
+  scrollbar-color: #2a3344 transparent;
 }
 
 .topology-canvas svg {
   display: block;
-  min-width: 720px;
-  height: auto;
+  /* Pixel-sized: block scale stays constant; canvas scrolls when wider. */
+  max-width: none;
+  flex-shrink: 0;
 }
 
 .link {
