@@ -93,29 +93,22 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   const displayWidth = layout.width * fitScale;
   const displayHeight = layout.height * fitScale;
 
-  // Tip-align when tips move. Do not steal scroll on expand — new blocks
-  // appear opposite the tip window and should stay in view.
+  // Horizontal: tip-align in the canvas scroller. Vertical uses page scroll
+  // only (no nested overflow), so leave scroll position alone.
   useEffect(() => {
+    if (vertical) return;
     const el = canvasRef.current;
     if (!el) return;
-    if (vertical) {
-      el.scrollTop = el.scrollHeight - el.clientHeight;
-    } else {
-      el.scrollLeft = el.scrollWidth - el.clientWidth;
-    }
+    el.scrollLeft = el.scrollWidth - el.clientWidth;
   }, [topology.coreTip?.hash, topology.knotsTip?.hash, vertical]);
 
   // Re-anchor to the tip after collapse (compact tip-window again).
   useEffect(() => {
-    if (expandCore || expandKnots) return;
+    if (vertical || expandCore || expandKnots) return;
     const el = canvasRef.current;
     if (!el) return;
-    if (vertical) {
-      el.scrollTop = el.scrollHeight - el.clientHeight;
-    } else {
-      el.scrollLeft = el.scrollWidth - el.clientWidth;
-    }
-  }, [expandCore, expandKnots, displayWidth, displayHeight, vertical]);
+    el.scrollLeft = el.scrollWidth - el.clientWidth;
+  }, [expandCore, expandKnots, displayWidth, vertical]);
 
   const ancestor = shared[shared.length - 1] ?? null;
   const statusText = statusLabel(topology);

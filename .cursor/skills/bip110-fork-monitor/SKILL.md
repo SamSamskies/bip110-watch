@@ -55,10 +55,11 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
    `BRANCH_TIP_DISPLAY` (3) at the tip; middle truncates with dashed `…+N`
    (click to expand/collapse when those headers are known). Height holes in
    fork.observer data get a non-clickable `…+N` between bordering blocks.
-   Diagram uses fixed block pixels; desktop is horizontal (scroll-x),
-   mobile (≤840px) is vertical — shared trunk down, STANDARD / BIP-110
-   columns side by side (scroll-y, tip-aligned). Scale up to fill empty
-   canvas width, never scale down.
+   Diagram uses fixed block pixels; desktop is horizontal (scroll-x,
+   tip-aligned). Mobile (≤840px) is vertical — shared trunk down,
+   STANDARD / BIP-110 columns side by side; diagram grows with the page
+   (no nested scroll). Scale up to fill empty canvas width, never scale
+   down.
 5. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
 
 Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.ts`.

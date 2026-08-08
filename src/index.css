@@ -166,12 +166,11 @@ body {
   scrollbar-color: #2a3344 transparent;
 }
 
+/* Grow with the page — no nested scroll (fights touch scrolling on mobile). */
 .topology-canvas--vertical {
   display: flex;
   justify-content: center;
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-height: min(70vh, 560px);
+  overflow: visible;
 }
 
 .topology-canvas svg {
