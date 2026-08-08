@@ -166,6 +166,14 @@ body {
   scrollbar-color: #2a3344 transparent;
 }
 
+.topology-canvas--vertical {
+  display: flex;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: min(70vh, 560px);
+}
+
 .topology-canvas svg {
   display: block;
   /* Pixel-sized: block scale stays constant; canvas scrolls when wider. */
@@ -242,6 +250,10 @@ body {
   font-size: 11px;
   font-weight: 500;
   pointer-events: none;
+}
+
+.block-miner--inset {
+  font-size: 10px;
 }
 
 .block-node {
@@ -491,5 +503,27 @@ body {
 
   .main-row.has-details {
     grid-template-columns: 1fr;
+  }
+
+  /* Match vertical ForkTopology: shared column, then split lanes. */
+  .skeleton-canvas {
+    flex-direction: column;
+    align-items: center;
+    min-height: 280px;
+  }
+
+  .skeleton-lane--shared {
+    flex-direction: column;
+  }
+
+  .skeleton-fork {
+    flex-direction: row;
+    justify-content: center;
+    gap: 2.5rem;
+    width: 100%;
+  }
+
+  .skeleton-lane {
+    flex-direction: column;
   }
 }
