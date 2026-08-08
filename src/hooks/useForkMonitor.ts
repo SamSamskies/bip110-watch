@@ -1,0 +1,243 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  FORK_DATA_INTERVAL_MS,
+  ORANGE_NODES_INTERVAL_MS,
+} from '../lib/types';
+import {
+  fetchOrangeNodes,
+  type OrangeNodesResponse,
+} from '../lib/orange';
+import { fetchForkData, type ForkDataResponse } from '../lib/forkObserver';
+import { buildTopology } from '../lib/topology';
+import type { ForkTopology } from '../lib/types';
+import { fixtureForkedCoreAhead, fixtureInAgreement } from '../data/fixtures';
+import {
+  activeEsploraHostName,
+  fetchRecentBlocks,
+  type EsploraBlock,
+} from '../lib/esplora';
+
+export type MonitorSource = 'live' | 'mock-forked' | 'mock-agree';
+
+export type ForkMonitorState = {
+  topology: ForkTopology | null;
+  orange: OrangeNodesResponse | null;
+  fork: ForkDataResponse | null;
+  esploraHost: string | null;
+  loading: boolean;
+  error: string | null;
+  lastSuccessAt: number | null;
+  source: MonitorSource;
+};
+
+const initial: ForkMonitorState = {
+  topology: null,
+  orange: null,
+  fork: null,
+  esploraHost: null,
+  loading: true,
+  error: null,
+  lastSuccessAt: null,
+  source: 'live',
+};
+
+function readSourceParam(): MonitorSource {
+  if (typeof window === 'undefined') return 'live';
+  const q = new URLSearchParams(window.location.search).get('mock');
+  if (q === 'forked') return 'mock-forked';
+  if (q === 'agree') return 'mock-agree';
+  return 'live';
+}
+
+export function useForkMonitor(): ForkMonitorState & {
+  refresh: () => void;
+} {
+  const [state, setState] = useState<ForkMonitorState>(() => ({
+    ...initial,
+    source: readSourceParam(),
+  }));
+  const orangeInflight = useRef(false);
+  const forkInflight = useRef(false);
+  const orangeRef = useRef<OrangeNodesResponse | null>(null);
+  const forkRef = useRef<ForkDataResponse | null>(null);
+
+  const applyTopology = useCallback(
+    (
+      orange: OrangeNodesResponse | null,
+      fork: ForkDataResponse | null,
+      patch: Partial<ForkMonitorState> = {},
+    ) => {
+      orangeRef.current = orange;
+      forkRef.current = fork;
+      const topology = buildTopology(orange, fork);
+      setState((prev) => ({
+        ...prev,
+        orange,
+        fork,
+        topology,
+        loading: false,
+        lastSuccessAt: Date.now(),
+        error: patch.error !== undefined ? patch.error : prev.error,
+        ...patch,
+      }));
+    },
+    [],
+  );
+
+  const pollOrange = useCallback(async () => {
+    if (orangeInflight.current) return;
+    orangeInflight.current = true;
+    try {
+      const orange = await fetchOrangeNodes();
+      applyTopology(orange, forkRef.current, { error: null });
+    } catch (err) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error:
+          prev.topology != null
+            ? prev.error
+            : err instanceof Error
+              ? err.message
+              : String(err),
+      }));
+    } finally {
+      orangeInflight.current = false;
+    }
+  }, [applyTopology]);
+
+  const pollFork = useCallback(async () => {
+    if (forkInflight.current) return;
+    forkInflight.current = true;
+    try {
+      const fork = await fetchForkData();
+      applyTopology(orangeRef.current, fork, { error: null });
+    } catch (err) {
+      if (!orangeRef.current) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error:
+            prev.topology != null
+              ? prev.error
+              : err instanceof Error
+                ? err.message
+                : String(err),
+        }));
+      }
+    } finally {
+      forkInflight.current = false;
+    }
+  }, [applyTopology]);
+
+  const pollEsploraFallback = useCallback(async () => {
+    if (orangeRef.current || forkRef.current) return;
+    try {
+      const blocks: EsploraBlock[] = await fetchRecentBlocks();
+      if (blocks[0]) {
+        const tip = blocks[0];
+        const syntheticOrange: OrangeNodesResponse = {
+          bip110: {
+            chain: 'main',
+            hash: tip.id,
+            height: tip.height,
+            ibd: false,
+            ok: true,
+            progress: 1,
+            pruned: false,
+            subversion: 'esplora-fallback',
+          },
+          main: {
+            chain: 'main',
+            hash: tip.id,
+            height: tip.height,
+            ibd: false,
+            ok: true,
+            progress: 1,
+            pruned: false,
+            subversion: 'esplora-fallback',
+          },
+          mandatoryHeight: 961632,
+          rejected: [],
+          schemaVersion: 1,
+          status: 'agree',
+          updated: Math.floor(Date.now() / 1000),
+        };
+        applyTopology(syntheticOrange, null, {
+          esploraHost: activeEsploraHostName(),
+          error: 'Using Esplora fallback (orange/fork proxies unavailable)',
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [applyTopology]);
+
+  const refresh = useCallback(() => {
+    const source = readSourceParam();
+    if (source === 'mock-forked') {
+      const { orange, fork, topology } = fixtureForkedCoreAhead();
+      orangeRef.current = orange;
+      forkRef.current = fork;
+      setState({
+        ...initial,
+        source,
+        orange,
+        fork,
+        topology,
+        loading: false,
+        lastSuccessAt: Date.now(),
+        error: null,
+      });
+      return;
+    }
+    if (source === 'mock-agree') {
+      const { orange, fork, topology } = fixtureInAgreement();
+      orangeRef.current = orange;
+      forkRef.current = fork;
+      setState({
+        ...initial,
+        source,
+        orange,
+        fork,
+        topology,
+        loading: false,
+        lastSuccessAt: Date.now(),
+        error: null,
+      });
+      return;
+    }
+    void pollOrange();
+    void pollFork();
+  }, [pollOrange, pollFork]);
+
+  useEffect(() => {
+    const source = readSourceParam();
+    if (source !== 'live') {
+      refresh();
+      return;
+    }
+
+    refresh();
+    const orangeTimer = window.setInterval(
+      () => void pollOrange(),
+      ORANGE_NODES_INTERVAL_MS,
+    );
+    const forkTimer = window.setInterval(
+      () => void pollFork(),
+      FORK_DATA_INTERVAL_MS,
+    );
+    const esploraTimer = window.setInterval(
+      () => void pollEsploraFallback(),
+      45_000,
+    );
+
+    return () => {
+      window.clearInterval(orangeTimer);
+      window.clearInterval(forkTimer);
+      window.clearInterval(esploraTimer);
+    };
+  }, [refresh, pollOrange, pollFork, pollEsploraFallback]);
+
+  return { ...state, refresh };
+}

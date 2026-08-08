@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/proxy/orange/:path*",
+      "destination": "https://bip110.orange.surf/api/:path*"
+    },
+    {
+      "source": "/proxy/fork/:path*",
+      "destination": "https://fork.observer/api/:path*"
+    }
+  ]
+}
