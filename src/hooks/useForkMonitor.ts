@@ -22,7 +22,6 @@ import {
   fetchRecentBlocks,
   type EsploraBlock,
 } from '../lib/esplora';
-import { fillStandardPathGaps, mergeFilledHeaders } from '../lib/headerFill';
 
 export type MonitorSource =
   | 'live'
@@ -98,46 +97,12 @@ export function useForkMonitor(): ForkMonitorState & {
     [],
   );
 
-  /** Paint DAG immediately; Esplora-fill standard-path holes in the background. */
-  const enrichAndApply = useCallback(
-    async (
-      orange: OrangeNodesResponse | null,
-      fork: ForkDataResponse | null,
-      patch: Partial<ForkMonitorState> = {},
-    ) => {
-      if (!fork) {
-        applyTopology(orange, null, patch);
-        return;
-      }
-
-      let merged = mergeFilledHeaders(fork);
-      applyTopology(orange, merged, patch);
-
-      const tipHash = orange?.main.hash;
-      if (!tipHash) return;
-
-      try {
-        const result = await fillStandardPathGaps(merged, tipHash);
-        if (result.filled > 0 || result.minersUpdated > 0) {
-          // Re-read tip in case a newer orange poll landed during the fill.
-          applyTopology(orangeRef.current, result.fork, {
-            ...patch,
-            ...(result.host ? { esploraHost: result.host } : {}),
-          });
-        }
-      } catch {
-        /* keep sparse topology */
-      }
-    },
-    [applyTopology],
-  );
-
   const pollOrange = useCallback(async () => {
     if (orangeInflight.current) return;
     orangeInflight.current = true;
     try {
       const orange = await fetchOrangeNodes();
-      // Diverged tips without a DAG would paint a tip-only gap flash — wait for fork.
+      // Diverged tips without a DAG would paint tip-only stubs — wait for fork.
       if (!forkRef.current && !orangeTipsAgree(orange)) {
         orangeRef.current = orange;
         setState((prev) => ({
@@ -148,7 +113,7 @@ export function useForkMonitor(): ForkMonitorState & {
         }));
         return;
       }
-      await enrichAndApply(orange, forkRef.current, { error: null });
+      applyTopology(orange, forkRef.current, { error: null });
     } catch (err) {
       // Keep last-good topology; only surface the error if we have nothing yet.
       setState((prev) => ({
@@ -164,14 +129,14 @@ export function useForkMonitor(): ForkMonitorState & {
     } finally {
       orangeInflight.current = false;
     }
-  }, [enrichAndApply]);
+  }, [applyTopology]);
 
   const pollFork = useCallback(async () => {
     if (forkInflight.current) return;
     forkInflight.current = true;
     try {
       const fork = await fetchForkData();
-      await enrichAndApply(orangeRef.current, fork, { error: null });
+      applyTopology(orangeRef.current, fork, { error: null });
     } catch (err) {
       if (forkRef.current) {
         // Keep last-good DAG — do not wipe to orange-only tip stubs.
@@ -180,19 +145,18 @@ export function useForkMonitor(): ForkMonitorState & {
           loading: false,
         }));
       } else if (orangeRef.current) {
-        await enrichAndApply(orangeRef.current, null, { error: null });
+        applyTopology(orangeRef.current, null, { error: null });
       } else {
         setState((prev) => ({
           ...prev,
           loading: false,
-          error:
-            err instanceof Error ? err.message : String(err),
+          error: err instanceof Error ? err.message : String(err),
         }));
       }
     } finally {
       forkInflight.current = false;
     }
-  }, [enrichAndApply]);
+  }, [applyTopology]);
 
   const pollEsploraFallback = useCallback(async () => {
     if (orangeRef.current || forkRef.current) return;

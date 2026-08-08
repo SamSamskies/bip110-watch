@@ -336,7 +336,7 @@ function OmitChip({
   const label =
     interactive && !collapsed && !isDataGap ? '−' : `…+${omitted}`;
   const title = isDataGap
-    ? `${omitted} block${omitted === 1 ? '' : 's'} missing from header data`
+    ? `${omitted} block${omitted === 1 ? '' : 's'} omitted in fork.observer data`
     : collapsed
       ? `Show ${omitted} older block${omitted === 1 ? '' : 's'}`
       : 'Show fewer blocks';
