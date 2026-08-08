@@ -10,9 +10,11 @@ type Props = {
 const BLOCK_W = 72;
 const BLOCK_H = 56;
 const GAP = 28;
-const LANE_GAP = 88;
+const LABEL_GAP = 4;
+const LABEL_H = 14;
+const LANE_GAP = 108;
 const PAD_X = 24;
-const PAD_Y = 36;
+const PAD_Y = 40;
 
 function blockColor(side: TopologyBlock['side']): string {
   if (side === 'core') return 'var(--core)';
@@ -34,7 +36,9 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   // fork connector gap between shared and branches
   const forkGap = forked ? GAP + 20 : 0;
   const width = PAD_X * 2 + sharedWidth + forkGap + branchWidth + 100;
-  const height = forked ? PAD_Y * 2 + LANE_GAP + BLOCK_H * 2 : PAD_Y * 2 + BLOCK_H + 40;
+  const height = forked
+    ? PAD_Y * 2 + LANE_GAP + BLOCK_H * 2 + LABEL_H
+    : PAD_Y * 2 + BLOCK_H + LABEL_H + 24;
 
   const midY = height / 2;
   const coreY = midY - LANE_GAP / 2 - BLOCK_H / 2;
@@ -288,6 +292,7 @@ function BlockNode({
   onSelect: (b: TopologyBlock) => void;
 }) {
   const color = blockColor(block.side);
+  const miner = truncateMiner(block.miner);
   return (
     <g
       className={`block-node${selected ? ' is-selected' : ''}`}
@@ -326,6 +331,14 @@ function BlockNode({
         r={4.5}
         className={block.signals ? 'signal-dot signal-dot--on' : 'signal-dot'}
       />
+      <text
+        x={BLOCK_W / 2}
+        y={BLOCK_H + LABEL_GAP + 10}
+        textAnchor="middle"
+        className="block-miner"
+      >
+        {miner}
+      </text>
       <title>
         {formatHeight(block.height)}
         {block.miner ? ` · ${block.miner}` : ''}
@@ -333,4 +346,11 @@ function BlockNode({
       </title>
     </g>
   );
+}
+
+function truncateMiner(miner: string | null): string {
+  if (!miner) return '—';
+  const cleaned = miner.replace(/\s+Pool$/i, '').replace(/\s+USA$/i, '');
+  if (cleaned.length <= 10) return cleaned;
+  return `${cleaned.slice(0, 9)}…`;
 }
