@@ -79,12 +79,14 @@ export function useForkMonitor(): ForkMonitorState & {
       fork: ForkDataResponse | null,
       patch: Partial<ForkMonitorState> = {},
     ) => {
-      orangeRef.current = orange;
-      forkRef.current = fork;
-      const topology = buildTopology(orange, fork);
+      // Never clear last-good refs on a partial/null apply (failed sibling poll).
+      if (orange) orangeRef.current = orange;
+      if (fork) forkRef.current = fork;
+      const orangeNext = orange ?? orangeRef.current;
+      const topology = buildTopology(orangeNext, fork);
       setState((prev) => ({
         ...prev,
-        orange,
+        orange: orangeNext,
         fork,
         topology,
         loading: false,
@@ -117,7 +119,8 @@ export function useForkMonitor(): ForkMonitorState & {
       try {
         const result = await fillStandardPathGaps(merged, tipHash);
         if (result.filled > 0 || result.minersUpdated > 0) {
-          applyTopology(orange, result.fork, {
+          // Re-read tip in case a newer orange poll landed during the fill.
+          applyTopology(orangeRef.current, result.fork, {
             ...patch,
             ...(result.host ? { esploraHost: result.host } : {}),
           });
@@ -147,6 +150,7 @@ export function useForkMonitor(): ForkMonitorState & {
       }
       await enrichAndApply(orange, forkRef.current, { error: null });
     } catch (err) {
+      // Keep last-good topology; only surface the error if we have nothing yet.
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -169,19 +173,20 @@ export function useForkMonitor(): ForkMonitorState & {
       const fork = await fetchForkData();
       await enrichAndApply(orangeRef.current, fork, { error: null });
     } catch (err) {
-      if (orangeRef.current) {
-        // Fork down — fall back to orange-only (may be sparse).
+      if (forkRef.current) {
+        // Keep last-good DAG — do not wipe to orange-only tip stubs.
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+        }));
+      } else if (orangeRef.current) {
         await enrichAndApply(orangeRef.current, null, { error: null });
       } else {
         setState((prev) => ({
           ...prev,
           loading: false,
           error:
-            prev.topology != null
-              ? prev.error
-              : err instanceof Error
-                ? err.message
-                : String(err),
+            err instanceof Error ? err.message : String(err),
         }));
       }
     } finally {

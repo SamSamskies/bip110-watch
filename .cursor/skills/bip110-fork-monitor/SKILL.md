@@ -70,7 +70,8 @@ Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.t
 - Orange nodes ~15s (small tip payload)
 - Fork data ~90s (~100KB DAG; blocks ~10m)
 - Pause all intervals while `document.hidden`; refresh on visibility
-- No overlapping in-flight requests; keep last-good on error
+- No overlapping in-flight requests; keep last-good orange/fork refs on error
+  (a fork 500 must not wipe the DAG down to orange tip-only stubs)
 - Vercel: CDN-cache proxies (`orange` ~10s, `fork` ~60s) via `vercel.json` headers
 
 ## Attribution
