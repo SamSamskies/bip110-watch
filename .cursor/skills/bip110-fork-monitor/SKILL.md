@@ -54,10 +54,11 @@ Fixtures: `?mock=forked` / `?mock=agree` via `src/data/fixtures.ts`.
 
 ## Polling
 
-- Orange nodes ~8s
-- Fork data ~20s
-- Signaling ~5 min
+- Orange nodes ~15s (small tip payload)
+- Fork data ~90s (~100KB DAG; blocks ~10m)
+- Pause all intervals while `document.hidden`; refresh on visibility
 - No overlapping in-flight requests; keep last-good on error
+- Vercel: CDN-cache proxies (`orange` ~10s, `fork` ~60s) via `vercel.json` headers
 
 ## Attribution
 

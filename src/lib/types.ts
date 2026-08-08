@@ -1,7 +1,9 @@
 export const REQUEST_TIMEOUT_MS = 10_000;
-export const ORANGE_NODES_INTERVAL_MS = 8_000;
-export const FORK_DATA_INTERVAL_MS = 20_000;
-export const ESPLORA_INTERVAL_MS = 45_000;
+/** Tip status — small payload; keep relatively fresh while tab is visible. */
+export const ORANGE_NODES_INTERVAL_MS = 15_000;
+/** Fork DAG (~100KB) — blocks arrive ~10m; poll slowly to spare Vercel origin transfer. */
+export const FORK_DATA_INTERVAL_MS = 90_000;
+export const ESPLORA_INTERVAL_MS = 60_000;
 
 export const ESPLORA_HOSTS = [
   'https://mempool.bitaroo.net',

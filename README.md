@@ -31,12 +31,11 @@ Static `dist/` on Vercel. [`vercel.json`](vercel.json) rewrites the same proxy p
 
 | Feed | Interval |
 |------|----------|
-| orange `/nodes` | ~8s |
-| fork.observer `/{id}/data.json` | ~20s |
-| orange `/signaling` | ~5 min |
-| Esplora (fallback only) | ~45s |
+| orange `/nodes` | ~15s |
+| fork.observer `/{id}/data.json` | ~90s |
+| Esplora (fallback only) | ~60s |
 
-Last-good topology is kept if a poll fails. Tab must stay open.
+Polling pauses while the tab is hidden and resumes (with an immediate refresh) when visible again. Last-good topology is kept if a poll fails. Vercel CDN caches proxy responses briefly (`/proxy/orange` ~10s, `/proxy/fork` ~60s) so concurrent viewers share origin fetches.
 
 ## Disclaimer
 

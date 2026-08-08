@@ -8,5 +8,23 @@
       "source": "/proxy/fork/:path*",
       "destination": "https://fork.observer/api/:path*"
     }
+  ],
+  "headers": [
+    {
+      "source": "/proxy/orange/:path*",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "1" },
+        { "key": "CDN-Cache-Control", "value": "public, max-age=10, stale-while-revalidate=20" },
+        { "key": "Vercel-Cache-Tag", "value": "proxy-orange" }
+      ]
+    },
+    {
+      "source": "/proxy/fork/:path*",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "1" },
+        { "key": "CDN-Cache-Control", "value": "public, max-age=60, stale-while-revalidate=30" },
+        { "key": "Vercel-Cache-Tag", "value": "proxy-fork" }
+      ]
+    }
   ]
 }

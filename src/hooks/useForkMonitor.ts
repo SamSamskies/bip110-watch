@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ESPLORA_INTERVAL_MS,
   FORK_DATA_INTERVAL_MS,
   ORANGE_NODES_INTERVAL_MS,
 } from '../lib/types';
@@ -218,24 +219,54 @@ export function useForkMonitor(): ForkMonitorState & {
       return;
     }
 
-    refresh();
-    const orangeTimer = window.setInterval(
-      () => void pollOrange(),
-      ORANGE_NODES_INTERVAL_MS,
-    );
-    const forkTimer = window.setInterval(
-      () => void pollFork(),
-      FORK_DATA_INTERVAL_MS,
-    );
-    const esploraTimer = window.setInterval(
-      () => void pollEsploraFallback(),
-      45_000,
-    );
+    let orangeTimer: number | undefined;
+    let forkTimer: number | undefined;
+    let esploraTimer: number | undefined;
 
+    const clearTimers = () => {
+      if (orangeTimer !== undefined) window.clearInterval(orangeTimer);
+      if (forkTimer !== undefined) window.clearInterval(forkTimer);
+      if (esploraTimer !== undefined) window.clearInterval(esploraTimer);
+      orangeTimer = undefined;
+      forkTimer = undefined;
+      esploraTimer = undefined;
+    };
+
+    const startTimers = () => {
+      clearTimers();
+      orangeTimer = window.setInterval(
+        () => void pollOrange(),
+        ORANGE_NODES_INTERVAL_MS,
+      );
+      forkTimer = window.setInterval(
+        () => void pollFork(),
+        FORK_DATA_INTERVAL_MS,
+      );
+      esploraTimer = window.setInterval(
+        () => void pollEsploraFallback(),
+        ESPLORA_INTERVAL_MS,
+      );
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refresh();
+        startTimers();
+      } else {
+        clearTimers();
+      }
+    };
+
+    // One fetch on mount so a briefly-hidden first paint still gets data.
+    refresh();
+    if (document.visibilityState === 'visible') {
+      startTimers();
+    }
+
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
-      window.clearInterval(orangeTimer);
-      window.clearInterval(forkTimer);
-      window.clearInterval(esploraTimer);
+      clearTimers();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [refresh, pollOrange, pollFork, pollEsploraFallback]);
 
