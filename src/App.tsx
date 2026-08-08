@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import './index.css'
 import { useForkMonitor } from './hooks/useForkMonitor'
 import { ForkTopology } from './components/ForkTopology'
+import { TopologySkeleton } from './components/TopologySkeleton'
 import { BlockDetails } from './components/BlockDetails'
 import { StatusBar } from './components/StatusBar'
 import type { TopologyBlock } from './lib/types'
@@ -39,7 +40,7 @@ function App() {
       />
 
       {monitor.loading && !monitor.topology ? (
-        <p className="loading">Connecting to tip monitors…</p>
+        <TopologySkeleton />
       ) : monitor.topology ? (
         <div className={`main-row${selected ? ' has-details' : ''}`}>
           <ForkTopology

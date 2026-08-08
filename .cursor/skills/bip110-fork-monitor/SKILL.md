@@ -54,7 +54,8 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 
 1. Tips from orange (preferred) or fork.observer standard / BIP-110 nodes
 2. Walk `header_infos` preferring `prev_blockhash` when present, else `prev_id`
-3. After fork poll: Esplora-fill standard-path height holes into session cache
+3. After fork poll: paint DAG immediately, then Esplora-fill standard-path holes
+   into the session cache in the background (brief gap chip is OK)
 4. Shared path is ancestor-only; topology keeps full post-fork branches
 5. UI tip-windows with `MAX_BRANCH_DISPLAY`; truncated lanes show dashed `…+N`
    (click to expand/collapse). Remaining height holes get a non-clickable `…+N`

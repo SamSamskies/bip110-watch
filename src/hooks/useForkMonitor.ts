@@ -6,6 +6,7 @@ import {
 } from '../lib/types';
 import {
   fetchOrangeNodes,
+  orangeTipsAgree,
   type OrangeNodesResponse,
 } from '../lib/orange';
 import { fetchForkData, type ForkDataResponse } from '../lib/forkObserver';
@@ -95,7 +96,7 @@ export function useForkMonitor(): ForkMonitorState & {
     [],
   );
 
-  /** Merge session Esplora fills; fetch any new standard-path height holes. */
+  /** Paint DAG immediately; Esplora-fill standard-path holes in the background. */
   const enrichAndApply = useCallback(
     async (
       orange: OrangeNodesResponse | null,
@@ -108,7 +109,6 @@ export function useForkMonitor(): ForkMonitorState & {
       }
 
       let merged = mergeFilledHeaders(fork);
-      // Show DAG immediately; fill gaps in the background if needed.
       applyTopology(orange, merged, patch);
 
       const tipHash = orange?.main.hash;
@@ -134,6 +134,17 @@ export function useForkMonitor(): ForkMonitorState & {
     orangeInflight.current = true;
     try {
       const orange = await fetchOrangeNodes();
+      // Diverged tips without a DAG would paint a tip-only gap flash — wait for fork.
+      if (!forkRef.current && !orangeTipsAgree(orange)) {
+        orangeRef.current = orange;
+        setState((prev) => ({
+          ...prev,
+          orange,
+          error: null,
+          loading: prev.topology == null ? true : prev.loading,
+        }));
+        return;
+      }
       await enrichAndApply(orange, forkRef.current, { error: null });
     } catch (err) {
       setState((prev) => ({
@@ -158,7 +169,10 @@ export function useForkMonitor(): ForkMonitorState & {
       const fork = await fetchForkData();
       await enrichAndApply(orangeRef.current, fork, { error: null });
     } catch (err) {
-      if (!orangeRef.current) {
+      if (orangeRef.current) {
+        // Fork down — fall back to orange-only (may be sparse).
+        await enrichAndApply(orangeRef.current, null, { error: null });
+      } else {
         setState((prev) => ({
           ...prev,
           loading: false,
