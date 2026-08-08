@@ -33,8 +33,15 @@ Configured in `vercel.json` and `vite.config.ts` `server.proxy`.
 - `GET /proxy/orange/signaling` — bit 4 bitmap, pools, `blockIds` for current epoch
 - `GET /proxy/fork/1/data.json` — `header_infos` DAG, `nodes[].tips`, countdown
 
-Esplora host rotation (`src/lib/esplora.ts`) is **fallback only** when both
-proxies fail. Esplora follows one tip and will not show a minority BIP-110 chain.
+Esplora host rotation (`src/lib/esplora.ts`):
+
+- **Full fallback** when both proxies fail (synthetic agree tip)
+- **Gap fill** for the standard tip path when fork.observer omits headers —
+  walk `prev_blockhash` via `/api/block/:hash`, store in a session
+  `Map` (`src/lib/headerFill.ts`), merge into `header_infos` before
+  `buildTopology`. Miner names come from coinbase (`/txids` + `/tx`) matched
+  against vendored mempool `pools-v2` (`src/data/miningPools.json`).
+  Not persisted across reloads. Cannot fill BIP-110 minority.
 
 ## Classification
 
@@ -46,12 +53,13 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 `buildTopology(orange, fork)` in `src/lib/topology.ts`:
 
 1. Tips from orange (preferred) or fork.observer standard / BIP-110 nodes
-2. Walk `header_infos` via `prev_id` (fallback `prev_blockhash`) to find common ancestor — hash-only walks break on sparse fork.observer DAGs
-3. Shared path is ancestor-only; topology keeps full post-fork branches
-4. UI tip-windows with `MAX_BRANCH_DISPLAY`; truncated lanes show dashed `…+N`
-   (click to expand/collapse). Height holes in a lane get a non-clickable `…+N`
-   chip *between* the bordering blocks (not always at the fork).
-5. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
+2. Walk `header_infos` preferring `prev_blockhash` when present, else `prev_id`
+3. After fork poll: Esplora-fill standard-path height holes into session cache
+4. Shared path is ancestor-only; topology keeps full post-fork branches
+5. UI tip-windows with `MAX_BRANCH_DISPLAY`; truncated lanes show dashed `…+N`
+   (click to expand/collapse). Remaining height holes get a non-clickable `…+N`
+   chip *between* the bordering blocks
+6. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
 
 Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.ts`.
 

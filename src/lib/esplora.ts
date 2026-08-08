@@ -96,3 +96,23 @@ export async function fetchRecentBlocks(): Promise<EsploraBlock[]> {
 export async function fetchTipHeight(): Promise<number> {
   return esploraFetchJson<number>('/api/blocks/tip/height');
 }
+
+/** Single block header by hash. */
+export async function fetchBlock(hash: string): Promise<EsploraBlock> {
+  return esploraFetchJson<EsploraBlock>(`/api/block/${hash}`);
+}
+
+export type EsploraTx = {
+  vin: { scriptsig?: string; is_coinbase?: boolean }[];
+  vout: { scriptpubkey_address?: string; value?: number }[];
+};
+
+/** Coinbase tx for a block (first txid). */
+export async function fetchBlockCoinbase(blockHash: string): Promise<EsploraTx | null> {
+  const txids = await esploraFetchJson<string[]>(
+    `/api/block/${blockHash}/txids`,
+  );
+  const coinbaseId = txids[0];
+  if (!coinbaseId) return null;
+  return esploraFetchJson<EsploraTx>(`/api/tx/${coinbaseId}`);
+}

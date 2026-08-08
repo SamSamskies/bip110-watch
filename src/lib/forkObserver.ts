@@ -69,9 +69,9 @@ export function indexHeadersById(
 
 /**
  * Walk prev links from tip hash toward genesis.
- * Prefer `prev_id` when an id index is provided — fork.observer often omits
- * intermediate headers from `header_infos`, so `prev_blockhash` walks break
- * even when the DAG still links via id (e.g. height gaps).
+ * Prefer `prev_blockhash` when that header is in the map (so Esplora fills are
+ * used). Fall back to `prev_id` when the prev hash is omitted from the DAG —
+ * fork.observer often skips intermediate headers but still links via id.
  */
 export function walkBack(
   byHash: Map<string, ForkHeaderInfo>,
@@ -83,12 +83,12 @@ export function walkBack(
   let h = byHash.get(tipHash);
   for (let i = 0; i < maxSteps && h; i++) {
     path.push(h);
-    const viaId = byId?.get(h.prev_id);
-    if (viaId) {
-      h = viaId;
+    const viaHash = h.prev_blockhash ? byHash.get(h.prev_blockhash) : undefined;
+    if (viaHash) {
+      h = viaHash;
       continue;
     }
-    h = byHash.get(h.prev_blockhash);
+    h = byId?.get(h.prev_id);
   }
   return path;
 }

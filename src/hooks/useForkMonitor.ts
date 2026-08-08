@@ -21,6 +21,7 @@ import {
   fetchRecentBlocks,
   type EsploraBlock,
 } from '../lib/esplora';
+import { fillStandardPathGaps, mergeFilledHeaders } from '../lib/headerFill';
 
 export type MonitorSource =
   | 'live'
@@ -94,12 +95,46 @@ export function useForkMonitor(): ForkMonitorState & {
     [],
   );
 
+  /** Merge session Esplora fills; fetch any new standard-path height holes. */
+  const enrichAndApply = useCallback(
+    async (
+      orange: OrangeNodesResponse | null,
+      fork: ForkDataResponse | null,
+      patch: Partial<ForkMonitorState> = {},
+    ) => {
+      if (!fork) {
+        applyTopology(orange, null, patch);
+        return;
+      }
+
+      let merged = mergeFilledHeaders(fork);
+      // Show DAG immediately; fill gaps in the background if needed.
+      applyTopology(orange, merged, patch);
+
+      const tipHash = orange?.main.hash;
+      if (!tipHash) return;
+
+      try {
+        const result = await fillStandardPathGaps(merged, tipHash);
+        if (result.filled > 0 || result.minersUpdated > 0) {
+          applyTopology(orange, result.fork, {
+            ...patch,
+            ...(result.host ? { esploraHost: result.host } : {}),
+          });
+        }
+      } catch {
+        /* keep sparse topology */
+      }
+    },
+    [applyTopology],
+  );
+
   const pollOrange = useCallback(async () => {
     if (orangeInflight.current) return;
     orangeInflight.current = true;
     try {
       const orange = await fetchOrangeNodes();
-      applyTopology(orange, forkRef.current, { error: null });
+      await enrichAndApply(orange, forkRef.current, { error: null });
     } catch (err) {
       setState((prev) => ({
         ...prev,
@@ -114,14 +149,14 @@ export function useForkMonitor(): ForkMonitorState & {
     } finally {
       orangeInflight.current = false;
     }
-  }, [applyTopology]);
+  }, [enrichAndApply]);
 
   const pollFork = useCallback(async () => {
     if (forkInflight.current) return;
     forkInflight.current = true;
     try {
       const fork = await fetchForkData();
-      applyTopology(orangeRef.current, fork, { error: null });
+      await enrichAndApply(orangeRef.current, fork, { error: null });
     } catch (err) {
       if (!orangeRef.current) {
         setState((prev) => ({
@@ -138,7 +173,7 @@ export function useForkMonitor(): ForkMonitorState & {
     } finally {
       forkInflight.current = false;
     }
-  }, [applyTopology]);
+  }, [enrichAndApply]);
 
   const pollEsploraFallback = useCallback(async () => {
     if (orangeRef.current || forkRef.current) return;
