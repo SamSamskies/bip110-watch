@@ -11,14 +11,22 @@ import {
 import { fetchForkData, type ForkDataResponse } from '../lib/forkObserver';
 import { buildTopology } from '../lib/topology';
 import type { ForkTopology } from '../lib/types';
-import { fixtureForkedCoreAhead, fixtureInAgreement } from '../data/fixtures';
+import {
+  fixtureForkedCoreAhead,
+  fixtureForkedLongBranches,
+  fixtureInAgreement,
+} from '../data/fixtures';
 import {
   activeEsploraHostName,
   fetchRecentBlocks,
   type EsploraBlock,
 } from '../lib/esplora';
 
-export type MonitorSource = 'live' | 'mock-forked' | 'mock-agree';
+export type MonitorSource =
+  | 'live'
+  | 'mock-forked'
+  | 'mock-agree'
+  | 'mock-long';
 
 export type ForkMonitorState = {
   topology: ForkTopology | null;
@@ -47,6 +55,7 @@ function readSourceParam(): MonitorSource {
   const q = new URLSearchParams(window.location.search).get('mock');
   if (q === 'forked') return 'mock-forked';
   if (q === 'agree') return 'mock-agree';
+  if (q === 'long') return 'mock-long';
   return 'live';
 }
 
@@ -194,6 +203,22 @@ export function useForkMonitor(): ForkMonitorState & {
     }
     if (source === 'mock-agree') {
       const { orange, fork, topology } = fixtureInAgreement();
+      orangeRef.current = orange;
+      forkRef.current = fork;
+      setState({
+        ...initial,
+        source,
+        orange,
+        fork,
+        topology,
+        loading: false,
+        lastSuccessAt: Date.now(),
+        error: null,
+      });
+      return;
+    }
+    if (source === 'mock-long') {
+      const { orange, fork, topology } = fixtureForkedLongBranches();
       orangeRef.current = orange;
       forkRef.current = fork;
       setState({

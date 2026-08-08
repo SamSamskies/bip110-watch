@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { formatHeight } from '../lib/bip110';
+import { viewBranch } from '../lib/branchView';
 import type { ForkTopology, TopologyBlock } from '../lib/types';
 
 type Props = {
@@ -10,6 +12,7 @@ type Props = {
 const BLOCK_W = 72;
 const BLOCK_H = 56;
 const GAP = 28;
+const OMIT_W = 56;
 const LABEL_GAP = 4;
 const LABEL_H = 14;
 const LANE_GAP = 108;
@@ -26,13 +29,25 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   const { shared, coreBranch, knotsBranch, status } = topology;
   const forked = status === 'forked';
 
-  const sharedCount = shared.length;
-  const maxBranch = Math.max(coreBranch.length, knotsBranch.length, 1);
+  const [expandCore, setExpandCore] = useState(false);
+  const [expandKnots, setExpandKnots] = useState(false);
 
+  useEffect(() => {
+    setExpandCore(false);
+    setExpandKnots(false);
+  }, [topology.coreTip?.hash, topology.knotsTip?.hash]);
+
+  const coreView = viewBranch(coreBranch, expandCore);
+  const knotsView = viewBranch(knotsBranch, expandKnots);
+
+  const sharedCount = shared.length;
   const sharedWidth =
     sharedCount > 0 ? sharedCount * BLOCK_W + (sharedCount - 1) * GAP : 0;
-  const branchWidth =
-    maxBranch > 0 ? maxBranch * BLOCK_W + (maxBranch - 1) * GAP : 0;
+  const branchWidth = Math.max(
+    laneWidth(coreView),
+    laneWidth(knotsView),
+    BLOCK_W,
+  );
   // fork connector gap between shared and branches
   const forkGap = forked ? GAP + 20 : 0;
   const width = PAD_X * 2 + sharedWidth + forkGap + branchWidth + 100;
@@ -111,67 +126,36 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
             );
           })}
 
-          {/* Fork connectors from ancestor to first branch blocks */}
-          {forked && ancestor && coreBranch[0] && (
-            <path
-              className="link link--core"
-              fill="none"
-              d={forkPath(
-                ancestorCx,
-                ancestorBottom,
-                branchStartX,
-                coreY + BLOCK_H / 2,
-              )}
+          {forked && ancestor && (
+            <LaneBranch
+              side="core"
+              view={coreView}
+              y={coreY}
+              branchStartX={branchStartX}
+              ancestorCx={ancestorCx}
+              ancestorBottom={ancestorBottom}
+              selectedHash={selectedHash}
+              onSelect={onSelect}
+              onToggle={() => setExpandCore((v) => !v)}
+              label={topology.coreLabel}
+              labelClass="lane-label lane-label--core"
             />
           )}
-          {forked && ancestor && knotsBranch[0] && (
-            <path
-              className="link link--knots"
-              fill="none"
-              d={forkPath(
-                ancestorCx,
-                ancestorBottom,
-                branchStartX,
-                knotsY + BLOCK_H / 2,
-              )}
+          {forked && ancestor && (
+            <LaneBranch
+              side="knots"
+              view={knotsView}
+              y={knotsY}
+              branchStartX={branchStartX}
+              ancestorCx={ancestorCx}
+              ancestorBottom={ancestorBottom}
+              selectedHash={selectedHash}
+              onSelect={onSelect}
+              onToggle={() => setExpandKnots((v) => !v)}
+              label={topology.knotsLabel}
+              labelClass="lane-label lane-label--knots"
             />
           )}
-
-          {/* Branch internal links */}
-          {forked &&
-            coreBranch.map((b, i) => {
-              if (i === 0) return null;
-              const x1 = branchStartX + (i - 1) * (BLOCK_W + GAP) + BLOCK_W;
-              const x2 = branchStartX + i * (BLOCK_W + GAP);
-              const y = coreY + BLOCK_H / 2;
-              return (
-                <line
-                  key={`cl-${b.hash}`}
-                  x1={x1}
-                  y1={y}
-                  x2={x2}
-                  y2={y}
-                  className="link link--core"
-                />
-              );
-            })}
-          {forked &&
-            knotsBranch.map((b, i) => {
-              if (i === 0) return null;
-              const x1 = branchStartX + (i - 1) * (BLOCK_W + GAP) + BLOCK_W;
-              const x2 = branchStartX + i * (BLOCK_W + GAP);
-              const y = knotsY + BLOCK_H / 2;
-              return (
-                <line
-                  key={`kl-${b.hash}`}
-                  x1={x1}
-                  y1={y}
-                  x2={x2}
-                  y2={y}
-                  className="link link--knots"
-                />
-              );
-            })}
 
           {/* Shared blocks */}
           {shared.map((b, i) => (
@@ -184,55 +168,191 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
               onSelect={onSelect}
             />
           ))}
-
-          {/* Standard / BIP-110 branches */}
-          {forked &&
-            coreBranch.map((b, i) => (
-              <BlockNode
-                key={b.hash}
-                block={b}
-                x={branchStartX + i * (BLOCK_W + GAP)}
-                y={coreY}
-                selected={selectedHash === b.hash}
-                onSelect={onSelect}
-              />
-            ))}
-          {forked &&
-            knotsBranch.map((b, i) => (
-              <BlockNode
-                key={b.hash}
-                block={b}
-                x={branchStartX + i * (BLOCK_W + GAP)}
-                y={knotsY}
-                selected={selectedHash === b.hash}
-                onSelect={onSelect}
-              />
-            ))}
-
-          {/* Lane labels */}
-          {forked && (
-            <>
-              <text
-                x={branchStartX + coreBranch.length * (BLOCK_W + GAP) - GAP + 8}
-                y={coreY + BLOCK_H / 2 + 5}
-                className="lane-label lane-label--core"
-              >
-                {topology.coreLabel}
-              </text>
-              <text
-                x={
-                  branchStartX + knotsBranch.length * (BLOCK_W + GAP) - GAP + 8
-                }
-                y={knotsY + BLOCK_H / 2 + 5}
-                className="lane-label lane-label--knots"
-              >
-                {topology.knotsLabel}
-              </text>
-            </>
-          )}
         </svg>
       </div>
     </section>
+  );
+}
+
+function LaneBranch({
+  side,
+  view,
+  y,
+  branchStartX,
+  ancestorCx,
+  ancestorBottom,
+  selectedHash,
+  onSelect,
+  onToggle,
+  label,
+  labelClass,
+}: {
+  side: 'core' | 'knots';
+  view: ReturnType<typeof viewBranch>;
+  y: number;
+  branchStartX: number;
+  ancestorCx: number;
+  ancestorBottom: number;
+  selectedHash: string | null;
+  onSelect: (b: TopologyBlock) => void;
+  onToggle: () => void;
+  label: string;
+  labelClass: string;
+}) {
+  const linkClass = side === 'core' ? 'link link--core' : 'link link--knots';
+  const hasOmit = view.canToggle;
+  const blocksStartX = hasOmit
+    ? branchStartX + OMIT_W + GAP
+    : branchStartX;
+  const first = view.blocks[0];
+  if (!first) return null;
+
+  const omitCx = branchStartX + OMIT_W / 2;
+  const laneMidY = y + BLOCK_H / 2;
+  const labelX =
+    blocksStartX +
+    view.blocks.length * (BLOCK_W + GAP) -
+    GAP +
+    8;
+
+  return (
+    <g className={`lane-branch lane-branch--${side}`}>
+      {/* Ancestor → omit chip or first block */}
+      <path
+        className={`${linkClass}${hasOmit ? ' link--dashed' : ''}`}
+        fill="none"
+        d={forkPath(
+          ancestorCx,
+          ancestorBottom,
+          hasOmit ? omitCx : blocksStartX,
+          laneMidY,
+        )}
+      />
+
+      {hasOmit ? (
+        <>
+          <OmitToggle
+            x={branchStartX}
+            y={y}
+            side={side}
+            omitted={view.omitted}
+            collapsed={view.collapsed}
+            onToggle={onToggle}
+          />
+          <line
+            x1={branchStartX + OMIT_W}
+            y1={laneMidY}
+            x2={blocksStartX}
+            y2={laneMidY}
+            className={`${linkClass} link--dashed`}
+          />
+        </>
+      ) : null}
+
+      {/* Branch internal links */}
+      {view.blocks.map((b, i) => {
+        if (i === 0) return null;
+        const x1 = blocksStartX + (i - 1) * (BLOCK_W + GAP) + BLOCK_W;
+        const x2 = blocksStartX + i * (BLOCK_W + GAP);
+        return (
+          <line
+            key={`l-${side}-${b.hash}`}
+            x1={x1}
+            y1={laneMidY}
+            x2={x2}
+            y2={laneMidY}
+            className={linkClass}
+          />
+        );
+      })}
+
+      {view.blocks.map((b, i) => (
+        <BlockNode
+          key={b.hash}
+          block={b}
+          x={blocksStartX + i * (BLOCK_W + GAP)}
+          y={y}
+          selected={selectedHash === b.hash}
+          onSelect={onSelect}
+        />
+      ))}
+
+      <text x={labelX} y={laneMidY + 5} className={labelClass}>
+        {label}
+      </text>
+    </g>
+  );
+}
+
+function laneWidth(view: ReturnType<typeof viewBranch>): number {
+  const n = view.blocks.length;
+  if (n === 0) return 0;
+  const blocksW = n * BLOCK_W + (n - 1) * GAP;
+  return view.canToggle ? OMIT_W + GAP + blocksW : blocksW;
+}
+
+function OmitToggle({
+  x,
+  y,
+  side,
+  omitted,
+  collapsed,
+  onToggle,
+}: {
+  x: number;
+  y: number;
+  side: 'core' | 'knots';
+  omitted: number;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const color = side === 'core' ? 'var(--core)' : 'var(--knots)';
+  const label = collapsed ? `…+${omitted}` : '−';
+  const title = collapsed
+    ? `Show ${omitted} older block${omitted === 1 ? '' : 's'}`
+    : 'Show fewer blocks';
+
+  return (
+    <g
+      className="omit-toggle"
+      transform={`translate(${x}, ${y})`}
+      role="button"
+      tabIndex={0}
+      aria-label={title}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle();
+        }
+      }}
+    >
+      <rect
+        width={OMIT_W}
+        height={BLOCK_H}
+        rx={10}
+        ry={10}
+        fill="var(--block-fill)"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeDasharray="4 3"
+      />
+      <text
+        x={OMIT_W / 2}
+        y={BLOCK_H / 2 + 1}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="omit-toggle-label"
+        fill={color}
+      >
+        {label}
+      </text>
+      <title>{title}</title>
+    </g>
   );
 }
 

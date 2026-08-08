@@ -178,3 +178,111 @@ export function fixtureForkedCoreAhead(): {
 
   return { orange, fork, topology: buildTopology(orange, fork) };
 }
+
+/**
+ * Long forked fixture to exercise branch truncation UI:
+ * common ancestor 961631, standard +14, BIP-110 +3.
+ */
+export function fixtureForkedLongBranches(): {
+  orange: OrangeNodesResponse;
+  fork: ForkDataResponse;
+  topology: ForkTopology;
+} {
+  const headers: ForkHeaderInfo[] = [];
+  const ancestor = '0000000000000000000common961631aaaaaaaaaaaaaaaaaaaaaa';
+  headers.push(
+    hdr(961631, 961630, 961631, ancestor, 'prev-ancestor', NOSIG, 'ViaBTC'),
+  );
+
+  let prevCore = ancestor;
+  let coreTipHash = ancestor;
+  let coreTipHeight = 961631;
+  for (let h = 961632; h <= 961645; h++) {
+    const hash = `0000000000000000000core${String(h).padStart(6, '0')}bbbbbbbbbbbbbb`;
+    headers.push(
+      hdr(
+        h * 10,
+        h === 961632 ? 961631 : (h - 1) * 10,
+        h,
+        hash,
+        prevCore,
+        NOSIG,
+        'Foundry USA',
+      ),
+    );
+    prevCore = hash;
+    coreTipHash = hash;
+    coreTipHeight = h;
+  }
+
+  let prevKnots = ancestor;
+  let knotsTipHash = ancestor;
+  let knotsTipHeight = 961631;
+  for (let h = 961632; h <= 961634; h++) {
+    const hash = `0000000000000000000knots${String(h).padStart(6, '0')}dddddddddddddd`;
+    headers.push(
+      hdr(
+        h * 10 + 1,
+        h === 961632 ? 961631 : (h - 1) * 10 + 1,
+        h,
+        hash,
+        prevKnots,
+        SIG,
+        'OCEAN',
+      ),
+    );
+    prevKnots = hash;
+    knotsTipHash = hash;
+    knotsTipHeight = h;
+  }
+
+  const orange: OrangeNodesResponse = {
+    bip110: {
+      chain: 'main',
+      hash: knotsTipHash,
+      height: knotsTipHeight,
+      ibd: false,
+      ok: true,
+      progress: 1,
+      pruned: true,
+      subversion: '/Satoshi:29.3.0/Knots:20260508/',
+    },
+    main: {
+      chain: 'main',
+      hash: coreTipHash,
+      height: coreTipHeight,
+      ibd: false,
+      ok: true,
+      progress: 1,
+      pruned: false,
+      subversion: '/Satoshi:31.0.0/',
+    },
+    mandatoryHeight: 961632,
+    rejected: [],
+    schemaVersion: 1,
+    status: 'forked',
+    updated: Math.floor(Date.now() / 1000),
+    lastKnownStatus: 'forked',
+    stale: false,
+  };
+
+  const fork: ForkDataResponse = {
+    header_infos: headers,
+    nodes: [
+      {
+        id: 0,
+        name: 'Bitcoin Core',
+        tips: [{ hash: coreTipHash, height: coreTipHeight, status: 'active' }],
+      },
+      {
+        id: 1,
+        name: 'Knots BIP-110',
+        tips: [
+          { hash: knotsTipHash, height: knotsTipHeight, status: 'active' },
+        ],
+      },
+    ],
+  };
+
+  return { orange, fork, topology: buildTopology(orange, fork) };
+}

@@ -47,10 +47,11 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 
 1. Tips from orange (preferred) or fork.observer standard / BIP-110 nodes
 2. Walk `header_infos` via `prev_id` (fallback `prev_blockhash`) to find common ancestor — hash-only walks break on sparse fork.observer DAGs
-3. Shared path is ancestor-only; branches capped by `MAX_BRANCH_DISPLAY`
-4. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
+3. Shared path is ancestor-only; topology keeps full post-fork branches
+4. UI tip-windows with `MAX_BRANCH_DISPLAY`; truncated lanes show dashed `…+N` (click to expand/collapse)
+5. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
 
-Fixtures: `?mock=forked` / `?mock=agree` via `src/data/fixtures.ts`.
+Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.ts`.
 
 ## Polling
 

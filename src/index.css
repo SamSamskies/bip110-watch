@@ -188,6 +188,39 @@ body {
   stroke: var(--knots);
 }
 
+.link--dashed {
+  stroke-dasharray: 5 4;
+  opacity: 0.7;
+}
+
+.omit-toggle {
+  cursor: pointer;
+}
+
+.omit-toggle rect {
+  transition: fill 120ms ease, stroke-width 120ms ease;
+}
+
+.omit-toggle:hover rect {
+  fill: #1c2330;
+  stroke-width: 2.25;
+}
+
+.omit-toggle:focus {
+  outline: none;
+}
+
+.omit-toggle:focus-visible rect {
+  stroke-width: 2.75;
+}
+
+.omit-toggle-label {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
 .block-height {
   fill: var(--text);
   font-family: 'IBM Plex Mono', ui-monospace, monospace;

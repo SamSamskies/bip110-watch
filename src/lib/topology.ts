@@ -16,7 +16,6 @@ import {
   type OrangeNodesResponse,
 } from './orange';
 import {
-  MAX_BRANCH_DISPLAY,
   SHARED_HISTORY_LEN,
   type ForkTopology,
   type TopologyBlock,
@@ -292,14 +291,7 @@ function buildForkedTopology(
       ];
   }
 
-  // Cap branch display length
-  if (coreBranchHeaders.length > MAX_BRANCH_DISPLAY) {
-    coreBranchHeaders = coreBranchHeaders.slice(-MAX_BRANCH_DISPLAY);
-  }
-  if (knotsBranchHeaders.length > MAX_BRANCH_DISPLAY) {
-    knotsBranchHeaders = knotsBranchHeaders.slice(-MAX_BRANCH_DISPLAY);
-  }
-
+  // Keep full post-fork paths; the UI truncates with an expand control.
   const shared = sharedHeaders.map((h) => headerToBlock(h, 'shared'));
   const coreBranch = coreBranchHeaders.map((h) => headerToBlock(h, 'core'));
   const knotsBranch = knotsBranchHeaders.map((h) => headerToBlock(h, 'knots'));
