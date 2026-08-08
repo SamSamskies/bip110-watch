@@ -9,15 +9,17 @@ type Props = {
   onSelect: (block: TopologyBlock) => void;
 };
 
-const BLOCK_W = 72;
-const BLOCK_H = 56;
-const GAP = 28;
-const OMIT_W = 56;
-const LABEL_GAP = 4;
-const LABEL_H = 14;
-const LANE_GAP = 108;
-const PAD_X = 24;
-const PAD_Y = 40;
+const BLOCK_W = 92;
+const BLOCK_H = 70;
+const GAP = 34;
+const OMIT_W = 72;
+const LABEL_GAP = 5;
+const LABEL_H = 16;
+const LANE_GAP = 128;
+const PAD_X = 28;
+const PAD_Y = 44;
+/** Cap how far we grow to fill empty canvas width (never scale down). */
+const MAX_FIT_SCALE = 1.35;
 
 function blockColor(side: TopologyBlock['side']): string {
   if (side === 'core') return 'var(--core)';
@@ -29,6 +31,7 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   const { shared, coreBranch, knotsBranch, status } = topology;
   const forked = status === 'forked';
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(0);
 
   const [expandCore, setExpandCore] = useState(false);
   const [expandKnots, setExpandKnots] = useState(false);
@@ -38,14 +41,21 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
     setExpandKnots(false);
   }, [topology.coreTip?.hash, topology.knotsTip?.hash]);
 
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? el.clientWidth;
+      setCanvasWidth(w);
+    });
+    ro.observe(el);
+    setCanvasWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
   const ancestorHeight = shared[shared.length - 1]?.height ?? null;
-  const coreView = viewBranch(coreBranch, expandCore, undefined, ancestorHeight);
-  const knotsView = viewBranch(
-    knotsBranch,
-    expandKnots,
-    undefined,
-    ancestorHeight,
-  );
+  const coreView = viewBranch(coreBranch, expandCore, ancestorHeight);
+  const knotsView = viewBranch(knotsBranch, expandKnots, ancestorHeight);
 
   const sharedCount = shared.length;
   const sharedWidth =
@@ -57,10 +67,18 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   );
   // fork connector gap between shared and branches
   const forkGap = forked ? GAP + 20 : 0;
-  const width = PAD_X * 2 + sharedWidth + forkGap + branchWidth + 100;
+  const width = PAD_X * 2 + sharedWidth + forkGap + branchWidth + 110;
   const height = forked
     ? PAD_Y * 2 + LANE_GAP + BLOCK_H * 2 + LABEL_H
     : PAD_Y * 2 + BLOCK_H + LABEL_H + 24;
+
+  // Grow into empty canvas width; never shrink below native size (scroll instead).
+  const fitScale =
+    canvasWidth > 0
+      ? Math.min(MAX_FIT_SCALE, Math.max(1, canvasWidth / width))
+      : 1;
+  const displayWidth = width * fitScale;
+  const displayHeight = height * fitScale;
 
   // Tip-align when tips move. Do not steal scroll on expand — new blocks
   // appear to the left of the tip window and should stay in view.
@@ -76,7 +94,7 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
     const el = canvasRef.current;
     if (!el) return;
     el.scrollLeft = el.scrollWidth - el.clientWidth;
-  }, [expandCore, expandKnots, width]);
+  }, [expandCore, expandKnots, displayWidth]);
 
   const midY = height / 2;
   const coreY = midY - LANE_GAP / 2 - BLOCK_H / 2;
@@ -127,8 +145,8 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
       <div className="topology-canvas" ref={canvasRef}>
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          width={width}
-          height={height}
+          width={displayWidth}
+          height={displayHeight}
           role="img"
           aria-label={statusText ?? 'Fork topology diagram'}
         >

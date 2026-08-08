@@ -14,7 +14,10 @@ export const ESPLORA_HOSTS = [
 
 /** Shared path length: ancestor only when forked; tip only when tips agree. */
 export const SHARED_HISTORY_LEN = 1;
-export const MAX_BRANCH_DISPLAY = 10;
+/** Blocks kept right after the fork when a lane is collapsed. */
+export const BRANCH_HEAD_DISPLAY = 3;
+/** Most-recent blocks kept at the tip when a lane is collapsed. */
+export const BRANCH_TIP_DISPLAY = 3;
 
 export type ChainSide = 'core' | 'knots' | 'shared';
 

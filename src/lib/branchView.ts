@@ -1,4 +1,8 @@
-import { MAX_BRANCH_DISPLAY, type TopologyBlock } from './types';
+import {
+  BRANCH_HEAD_DISPLAY,
+  BRANCH_TIP_DISPLAY,
+  type TopologyBlock,
+} from './types';
 
 export type BranchChip = {
   kind: 'chip';
@@ -6,7 +10,7 @@ export type BranchChip = {
   omitted: number;
   /** Display-truncation chip (expand/collapse). */
   canToggle: boolean;
-  /** True while the tip window is collapsed. */
+  /** True while the head+tip window is collapsed. */
   collapsed: boolean;
   /** True when the gap is missing headers, not just hidden. */
   isDataGap: boolean;
@@ -23,31 +27,42 @@ export type BranchView = {
   items: BranchItem[];
   /** True when a display-truncation chip is present. */
   canToggle: boolean;
-  /** True when showing the truncated tip window. */
+  /** True when showing the head+tip window. */
   collapsed: boolean;
 };
 
 /**
- * Build a tip-aligned lane with chips at real height holes.
- * Display truncation inserts an interactive chip before the tip window;
- * sparse DAG holes get non-interactive chips between the bordering blocks.
+ * Build a lane that keeps the fork head and the tip, truncating the middle.
+ * Sparse DAG holes get chips between bordering blocks; the middle truncate
+ * chip is clickable when known headers are hidden.
  */
 export function viewBranch(
   branch: TopologyBlock[],
   expanded: boolean,
-  max = MAX_BRANCH_DISPLAY,
   ancestorHeight?: number | null,
+  head = BRANCH_HEAD_DISPLAY,
+  tip = BRANCH_TIP_DISPLAY,
 ): BranchView {
-  const canToggle = branch.length > max;
+  const canToggle = branch.length > head + tip;
   const collapsed = canToggle && !expanded;
-  const visible =
-    canToggle && collapsed ? branch.slice(-max) : branch;
+
+  let visible = branch;
+  let hiddenMiddle = 0;
+  let truncateAfterHeight: number | null = null;
+
+  if (canToggle && collapsed) {
+    const headBlocks = branch.slice(0, head);
+    const tipBlocks = branch.slice(-tip);
+    visible = [...headBlocks, ...tipBlocks];
+    hiddenMiddle = branch.length - head - tip;
+    truncateAfterHeight = headBlocks[headBlocks.length - 1]?.height ?? null;
+  }
 
   const items = itemsFromHeights(visible, ancestorHeight ?? null, {
     canToggle,
     collapsed,
-    /** Heights dropped by tip-window collapse (known headers, just hidden). */
-    hiddenPrefix: canToggle && collapsed ? branch.length - max : 0,
+    hiddenMiddle,
+    truncateAfterHeight,
   });
 
   return { items, canToggle, collapsed };
@@ -56,7 +71,12 @@ export function viewBranch(
 function itemsFromHeights(
   visible: TopologyBlock[],
   ancestorHeight: number | null,
-  opts: { canToggle: boolean; collapsed: boolean; hiddenPrefix: number },
+  opts: {
+    canToggle: boolean;
+    collapsed: boolean;
+    hiddenMiddle: number;
+    truncateAfterHeight: number | null;
+  },
 ): BranchItem[] {
   const items: BranchItem[] = [];
   let prevHeight = ancestorHeight;
@@ -66,37 +86,27 @@ function itemsFromHeights(
     if (prevHeight != null) {
       const hole = block.height - prevHeight - 1;
       if (hole > 0) {
-        // First hole while tip-window is collapsed: treat as expand control
-        // when it matches (or covers) the hidden prefix of known headers.
         const isTruncateChip =
           opts.canToggle &&
           opts.collapsed &&
-          i === 0 &&
-          opts.hiddenPrefix > 0;
+          opts.hiddenMiddle > 0 &&
+          opts.truncateAfterHeight != null &&
+          prevHeight === opts.truncateAfterHeight;
         items.push({
           kind: 'chip',
           omitted: hole,
           canToggle: isTruncateChip,
           collapsed: opts.collapsed,
-          isDataGap: isTruncateChip ? hole > opts.hiddenPrefix : true,
+          isDataGap: !isTruncateChip || hole > opts.hiddenMiddle,
         });
       }
-    } else if (opts.canToggle && opts.collapsed && i === 0 && opts.hiddenPrefix > 0) {
-      // No ancestor height — still show truncate chip before tip window.
-      items.push({
-        kind: 'chip',
-        omitted: opts.hiddenPrefix,
-        canToggle: true,
-        collapsed: true,
-        isDataGap: false,
-      });
     }
 
     items.push({ kind: 'block', block });
     prevHeight = block.height;
   }
 
-  // Expanded truncate control: show collapse chip at lane start when no hole.
+  // Expanded: collapse control at lane start.
   if (opts.canToggle && !opts.collapsed) {
     const hasTruncateChip = items.some((it) => it.kind === 'chip' && it.canToggle);
     if (!hasTruncateChip) {

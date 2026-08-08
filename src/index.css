@@ -223,7 +223,7 @@ body {
 
 .omit-toggle-label {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   pointer-events: none;
 }
@@ -231,7 +231,7 @@ body {
 .block-height {
   fill: var(--text);
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   pointer-events: none;
 }
@@ -239,7 +239,7 @@ body {
 .block-miner {
   fill: var(--muted);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
   pointer-events: none;
 }
@@ -413,8 +413,8 @@ body {
 }
 
 .skeleton-block {
-  width: 72px;
-  height: 56px;
+  width: 92px;
+  height: 70px;
   border-radius: 10px;
   border: 1.75px solid #2a3344;
   background: color-mix(in srgb, #1c2330 80%, transparent);

@@ -31,7 +31,7 @@ function summary(items: BranchItem[]) {
 describe('viewBranch', () => {
   it('passes through short contiguous branches', () => {
     const branch = [632, 633, 634].map(block);
-    const view = viewBranch(branch, false, 10, 631);
+    const view = viewBranch(branch, false, 631);
     expect(view.canToggle).toBe(false);
     expect(summary(view.items)).toEqual([
       { kind: 'block', height: 632 },
@@ -40,9 +40,11 @@ describe('viewBranch', () => {
     ]);
   });
 
-  it('places a data-gap chip between bordering blocks', () => {
+  it('places a data-gap chip between bordering blocks when short', () => {
+    // 3 head + 2 tip = 5 ≤ 6 — no display truncate, only data gap
     const branch = [632, 633, 634, 644, 645].map(block);
-    const view = viewBranch(branch, false, 10, 631);
+    const view = viewBranch(branch, false, 631);
+    expect(view.canToggle).toBe(false);
     expect(summary(view.items)).toEqual([
       { kind: 'block', height: 632 },
       { kind: 'block', height: 633 },
@@ -53,38 +55,40 @@ describe('viewBranch', () => {
     ]);
   });
 
+  it('keeps 3 after the fork and 3 at the tip, truncating the middle', () => {
+    const branch = [632, 633, 634, 635, 636, 637, 638, 639, 640].map(block);
+    const view = viewBranch(branch, false, 631, 3, 3);
+    expect(view.canToggle).toBe(true);
+    expect(view.collapsed).toBe(true);
+    expect(summary(view.items)).toEqual([
+      { kind: 'block', height: 632 },
+      { kind: 'block', height: 633 },
+      { kind: 'block', height: 634 },
+      { kind: 'chip', omitted: 3, canToggle: true, isDataGap: false },
+      { kind: 'block', height: 638 },
+      { kind: 'block', height: 639 },
+      { kind: 'block', height: 640 },
+    ]);
+  });
+
   it('places a data-gap chip before a lone tip', () => {
-    const view = viewBranch([block(647)], false, 10, 632);
+    const view = viewBranch([block(647)], false, 632);
     expect(summary(view.items)).toEqual([
       { kind: 'chip', omitted: 14, canToggle: false, isDataGap: true },
       { kind: 'block', height: 647 },
     ]);
   });
 
-  it('collapses to a tip window with an interactive leading chip', () => {
-    const branch = [1, 2, 3, 4, 5].map(block);
-    const view = viewBranch(branch, false, 3, 0);
-    expect(view.canToggle).toBe(true);
-    expect(view.collapsed).toBe(true);
-    expect(summary(view.items)).toEqual([
-      { kind: 'chip', omitted: 2, canToggle: true, isDataGap: false },
-      { kind: 'block', height: 3 },
-      { kind: 'block', height: 4 },
-      { kind: 'block', height: 5 },
-    ]);
-  });
-
   it('expands with a collapse control at the lane start', () => {
-    const branch = [1, 2, 3, 4, 5].map(block);
-    const view = viewBranch(branch, true, 3, 0);
+    const branch = [632, 633, 634, 635, 636, 637, 638, 639, 640].map(block);
+    const view = viewBranch(branch, true, 631, 3, 3);
     expect(view.collapsed).toBe(false);
-    expect(summary(view.items)).toEqual([
-      { kind: 'chip', omitted: 0, canToggle: true, isDataGap: false },
-      { kind: 'block', height: 1 },
-      { kind: 'block', height: 2 },
-      { kind: 'block', height: 3 },
-      { kind: 'block', height: 4 },
-      { kind: 'block', height: 5 },
-    ]);
+    expect(summary(view.items)[0]).toEqual({
+      kind: 'chip',
+      omitted: 0,
+      canToggle: true,
+      isDataGap: false,
+    });
+    expect(view.items.filter((it) => it.kind === 'block')).toHaveLength(9);
   });
 });

@@ -51,10 +51,12 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 2. Walk `header_infos` preferring `prev_blockhash` when present, else `prev_id`
    (sparse DAGs often skip intermediate headers but still link via id)
 3. Shared path is ancestor-only; topology keeps full post-fork branches
-4. UI tip-windows with `MAX_BRANCH_DISPLAY`; truncated lanes show dashed `…+N`
-   (click to expand/collapse). Height holes in fork.observer data get a
-   non-clickable `…+N` chip *between* the bordering blocks. Diagram uses fixed
-   block pixels + horizontal scroll (tip-aligned); do not scale the SVG to fit
+4. UI keeps `BRANCH_HEAD_DISPLAY` (3) blocks after the fork and
+   `BRANCH_TIP_DISPLAY` (3) at the tip; middle truncates with dashed `…+N`
+   (click to expand/collapse when those headers are known). Height holes in
+   fork.observer data get a non-clickable `…+N` between bordering blocks.
+   Diagram uses fixed block pixels + horizontal scroll; scale up to fill
+   empty canvas width, never scale down.
 5. `approxReorgChancePercent(Δ)` ≈ `100 / 2^(Δ+1)` — label as approximate
 
 Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.ts`.
