@@ -1,4 +1,4 @@
-import { formatHeight, shortHash } from '../lib/bip110';
+import { formatHeight } from '../lib/bip110';
 import type { ForkTopology, TopologyBlock } from '../lib/types';
 
 type Props = {
@@ -55,10 +55,6 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
   const ancestorBottom = sharedY + BLOCK_H;
 
   const statusText = statusLabel(topology);
-  const tipHash =
-    topology.leader === 'knots'
-      ? topology.knotsTip?.hash
-      : topology.coreTip?.hash ?? topology.commonAncestor?.hash;
 
   return (
     <section className="topology-card" aria-label="Fork topology">
@@ -67,12 +63,22 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
           <p className="eyebrow">Active chains</p>
           <h1>Fork topology</h1>
         </div>
-        <p className="topology-status" role="status">
-          {statusText}
-        </p>
+        {statusText ? (
+          <p className="topology-status" role="status">
+            {statusText}
+          </p>
+        ) : (
+          <span className="topology-status" aria-hidden />
+        )}
         {forked && topology.deltaBlocks > 0 ? (
           <div className="delta-badge" title="Height difference between tips">
-            <span aria-hidden>▲</span> {topology.deltaBlocks} BLOCK
+            <span aria-hidden>▲</span>{' '}
+            {topology.leader === 'core'
+              ? 'Core'
+              : topology.leader === 'knots'
+                ? 'Knots'
+                : null}{' '}
+            {topology.deltaBlocks} BLOCK
             {topology.deltaBlocks === 1 ? '' : 'S'}
           </div>
         ) : (
@@ -85,7 +91,7 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
           viewBox={`0 0 ${width} ${height}`}
           width="100%"
           role="img"
-          aria-label={statusText}
+          aria-label={statusText ?? 'Fork topology diagram'}
         >
           {/* Shared links */}
           {shared.map((b, i) => {
@@ -248,24 +254,18 @@ export function ForkTopology({ topology, selectedHash, onSelect }: Props) {
             <span className="meta-label">No ancestor yet</span>
           )}
         </div>
-        <div className="hash-meta" title={tipHash ?? undefined}>
-          {tipHash ? shortHash(tipHash) : '—'}
-        </div>
       </footer>
     </section>
   );
 }
 
-function statusLabel(t: ForkTopology): string {
+function statusLabel(t: ForkTopology): string | null {
   if (t.status === 'agree') return 'In agreement — both nodes on the same tip';
   if (t.status === 'unknown') return 'Waiting for chain tips…';
-  if (t.leader === 'core' && t.deltaBlocks > 0) {
-    return `Core ahead by ${t.deltaBlocks}`;
+  if (t.status === 'forked' && t.deltaBlocks === 0) {
+    return 'Same height, different tips';
   }
-  if (t.leader === 'knots' && t.deltaBlocks > 0) {
-    return `Knots ahead by ${t.deltaBlocks}`;
-  }
-  return 'Forked — same height, different tips';
+  return null;
 }
 
 function forkPath(
