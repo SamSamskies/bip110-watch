@@ -4,7 +4,6 @@ import { useForkMonitor } from './hooks/useForkMonitor'
 import { ForkTopology } from './components/ForkTopology'
 import { TopologySkeleton } from './components/TopologySkeleton'
 import { BlockDetails } from './components/BlockDetails'
-import { StatusBar } from './components/StatusBar'
 import type { TopologyBlock } from './lib/types'
 
 function App() {
@@ -27,17 +26,10 @@ function App() {
         <div>
           <h1>BIP-110 Watch</h1>
           <p>
-            Live BIP-110 fork topology during mandatory signaling.
+            BIP-110 fork topology during mandatory signaling.
           </p>
         </div>
       </header>
-
-      <StatusBar
-        topology={monitor.topology}
-        lastSuccessAt={monitor.lastSuccessAt}
-        error={monitor.error}
-        source={monitor.source}
-      />
 
       {monitor.loading && !monitor.topology ? (
         <TopologySkeleton />

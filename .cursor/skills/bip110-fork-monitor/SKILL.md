@@ -3,7 +3,7 @@ name: bip110-fork-monitor
 description: >-
   BIP-110 fork topology monitor: orange.surf dual tips, fork.observer headers,
   version bit 4, Vercel/Vite proxies, and ForkTopology model. Use when changing
-  polling, topology merge, proxies, or BIP-110 classification in bip110-watch.
+  page-load fetching, topology merge, proxies, or BIP-110 classification in bip110-watch.
 ---
 
 # BIP-110 Fork Monitor
@@ -64,11 +64,10 @@ Constants live in `src/lib/bip110.ts` (mandatory window 961632–963647).
 
 Fixtures: `?mock=forked` / `?mock=agree` / `?mock=long` via `src/data/fixtures.ts`.
 
-## Polling
+## Data loading
 
-- Orange nodes ~15s (small tip payload)
-- Fork data ~90s (~100KB DAG; blocks ~10m)
-- Pause all intervals while `document.hidden`; refresh on visibility
+- Fetch once on page load (orange + fork in parallel); no background polling
+- Esplora fallback once if both proxies fail on that load
 - No overlapping in-flight requests; keep last-good orange/fork refs on error
   (a fork 500 must not wipe the DAG down to orange tip-only stubs)
 - Vercel: CDN-cache proxies (`orange` ~10s, `fork` ~60s) via `vercel.json` headers

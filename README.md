@@ -27,15 +27,9 @@ npm run build
 
 Static `dist/` on Vercel. [`vercel.json`](vercel.json) rewrites the same proxy paths.
 
-## Polling
+## Data loading
 
-| Feed | Interval |
-|------|----------|
-| orange `/nodes` | ~15s |
-| fork.observer `/{id}/data.json` | ~90s |
-| Esplora (fallback only) | ~60s |
-
-Polling pauses while the tab is hidden and resumes (with an immediate refresh) when visible again. Last-good topology is kept if a poll fails. Vercel CDN caches proxy responses briefly (`/proxy/orange` ~10s, `/proxy/fork` ~60s) so concurrent viewers share origin fetches.
+Topology is fetched once on page load (orange tips + fork.observer DAG). There is no background polling — reload the page for a fresh snapshot. Esplora is used once as a fallback only if both proxies fail. Vercel CDN caches proxy responses briefly (`/proxy/orange` ~10s, `/proxy/fork` ~60s) so concurrent viewers share origin fetches.
 
 ## Disclaimer
 
